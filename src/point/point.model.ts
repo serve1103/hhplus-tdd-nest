@@ -1,7 +1,7 @@
 export type UserPoint = {
   id: number;
   point: number;
-  updateMillis: string;
+  updateMillis: number;
 };
 
 /**
