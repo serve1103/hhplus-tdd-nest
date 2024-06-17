@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Patch,
   ValidationPipe,
@@ -24,7 +25,11 @@ export class PointController {
   @Get(':id')
   async point(@Param('id') id): Promise<UserPoint> {
     const userId = Number.parseInt(id);
-    return { id: userId, point: 0, updateMillis: Date.now() };
+    const userPoint = await this.userDb.selectById(userId);
+    if (!userPoint) {
+      throw new NotFoundException('유저를 찾을수 없습니다.');
+    }
+    return userPoint;
   }
 
   //   /**
