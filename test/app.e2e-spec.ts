@@ -8,57 +8,82 @@ import { UserPointTable } from './../src/database/userpoint.table';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  const fixedDate = new Date(2022, 5, 1).getTime();
   let userDb: UserPointTable;
   // let historyDb: PointHistoryTable;
 
   beforeEach(async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(fixedDate); // 고정된 날짜 설정
-    
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    })
-    .overrideProvider(UserPointTable) // UserPointTable 제공자 오버라이드
-    .useValue({
-      selectById: jest.fn().mockResolvedValue({ id: 1, point: 0, updateMillis: fixedDate }),
-      insertOrUpdate: jest.fn().mockImplementation((id: number, amount: number) => {
-        return Promise.resolve({ id, point: amount, updateMillis: fixedDate });
-      }),
-    })
-    .compile();
-    
+    }).compile();
+
     app = moduleFixture.createNestApplication();
-    userDb = moduleFixture.get<UserPointTable>(UserPointTable); // Mock된 인스턴스 얻기
     await app.init();
+
+    userDb = moduleFixture.get<UserPointTable>(UserPointTable); // Mock된 인스턴스 얻기
   });
-  
+
+  it('/point/:id (GET)', async () => {
+    // API 호출
+    const res = await request(app.getHttpServer()).get('/point/1').expect(200);
+
+    // 응답 및 검증
+    expect(res.body).toEqual({
+      id: 1,
+      point: 0,
+      updateMillis: expect.any(Number),
+    });
+  });
+
   afterAll(async () => {
-    jest.useRealTimers(); // 모킹 해제
     await app.close();
   });
 
-  // 유저의 포인트를 조회한다.
-  it('/point/:id (GET)', async () => {
-    await userDb.insertOrUpdate( 1, 100 );
-    return request(app.getHttpServer()).get('/point/1').expect(200).expect({
-      id: 1,
-      point: 100,
-      updateMillis: fixedDate, // 고정된 날짜와 일치
-    });
-  });
-  
   // 유저의 포인트를 충전한다.
   it('/point/:id/charge (PATCH)', async () => {
-    await userDb.insertOrUpdate(1,100)
-    return request(app.getHttpServer())
+    // API 호출
+    const res = await request(app.getHttpServer())
       .patch('/point/1/charge')
       .send({ amount: 100 })
-      .expect(200)
-      .expect({
-        id: 1,
-        point: 100,
-        updateMillis: fixedDate,
-      });
+      .expect(200);
+
+    // 응답 및 검증
+    expect(res.body).toEqual({
+      id: 1,
+      point: 100,
+      updateMillis: expect.any(Number),
+    });
   });
+
+  // 유저의 포인트를 충전한다.(실패)
+  it('/point/:id/charge (PATCH)', async () => {
+    // API 호출
+    const res = await request(app.getHttpServer())
+      .patch('/point/1/charge')
+      .send({ amount: -100 })
+      .expect(500);
+
+    // 응답 및 검증
+    expect(res.body).toEqual({
+      message: 'Internal server error',
+      statusCode: 500,
+    });
+  });
+
+  // 유저의 포인트를 충전한다.(실패2)
+  it('/point/:id/charge (PATCH)', async () => {
+    // API 호출
+    const res = await request(app.getHttpServer())
+      .patch('/point/1/charge')
+      .send({ amount: 0 })
+      .expect(500);
+
+    // 응답 및 검증
+    expect(res.body).toEqual({
+      message: 'Internal server error',
+      statusCode: 500,
+    });
+  });
+
+  //유저의 포인트를 사용한다.
+  it('/point/:id/use (PATCH)', async () => {});
 });

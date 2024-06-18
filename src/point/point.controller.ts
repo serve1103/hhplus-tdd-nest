@@ -8,15 +8,15 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { UserPoint } from './point.model';
-import { UserPointTable } from '../database/userpoint.table';
 import { PointHistoryTable } from '../database/pointhistory.table';
 import { PointBody as PointDto } from './point.dto';
+import { PointService } from './point.service';
 
 @Controller('/point')
 export class PointController {
   constructor(
-    private readonly userDb: UserPointTable,
     private readonly historyDb: PointHistoryTable,
+    private readonly pointService: PointService,
   ) {}
 
   /**
@@ -24,12 +24,7 @@ export class PointController {
    */
   @Get(':id')
   async point(@Param('id') id): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
-    const userPoint = await this.userDb.selectById(userId);
-    if (!userPoint) {
-      throw new NotFoundException('유저를 찾을수 없습니다.');
-    }
-    return userPoint;
+    return this.pointService.getPoint(id);
   }
 
   //   /**
@@ -49,9 +44,7 @@ export class PointController {
     @Param('id') id,
     @Body(ValidationPipe) pointDto: PointDto,
   ): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
-    const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    return this.pointService.chargePoint(id, pointDto);
   }
 
   /**
@@ -62,8 +55,9 @@ export class PointController {
     @Param('id') id,
     @Body(ValidationPipe) pointDto: PointDto,
   ): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
-    const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    // const userId = Number.parseInt(id);
+    // const amount = pointDto.amount;
+    // return { id: userId, point: amount, updateMillis: Date.now() };
+    return this.pointService.usePoint(id, pointDto);
   }
 }

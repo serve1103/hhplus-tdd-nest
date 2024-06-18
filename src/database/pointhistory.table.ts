@@ -36,4 +36,9 @@ export class PointHistoryTable {
       r(this.table.filter((v) => v.userId == userId));
     });
   }
+
+  reset() {
+    this.table.length = 0;
+    this.cursor = 1;
+  }
 }
