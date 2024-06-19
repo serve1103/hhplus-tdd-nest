@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserPointTable } from '../database/userpoint.table';
 import { PointBody } from './point.dto';
+import { PointHistoryTable } from '../database/pointhistory.table';
+import { PointHistory, TransactionType } from './point.model';
 
 @Injectable()
 export class PointService {
-  constructor(private readonly userDb: UserPointTable) {}
+  constructor(
+    private readonly userDb: UserPointTable, 
+    private readonly pointHistoryTable: PointHistoryTable
+  ) {}
 
   // 유저의 포인트를 조회한다.
   async getPoint(id: string) {
@@ -34,6 +39,9 @@ export class PointService {
     // 정상적인 포인트만 충전
     const userPoint = await this.userDb.insertOrUpdate(userId, amount);
 
+    // 로그 저장
+    await this.pointHistoryTable.insert(userPoint.id, userPoint.point, TransactionType.CHARGE, Date.now());
+
     return userPoint;
   }
 
@@ -58,7 +66,17 @@ export class PointService {
     }
 
     // 결과 저장
-    const result = await this.userDb.insertOrUpdate(userId, usedAmount)
+    const result = await this.userDb.insertOrUpdate(userId, usedAmount);
+    // 로그 저장
+    await this.pointHistoryTable.insert(result.id, result.point, TransactionType.USE, Date.now());
+    return result;
+  }
+
+  // 로그 조회
+  async getHistory(id: string): Promise<PointHistory[]> {
+    const userId = Number.parseInt(id);
+    if (isNaN(userId)) throw new Error('유효하지 않은 id 입니다.');
+    const result = this.pointHistoryTable.selectAllByUserId(userId);
     return result;
   }
 }
