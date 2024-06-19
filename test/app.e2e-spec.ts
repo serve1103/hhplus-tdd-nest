@@ -3,8 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { UserPointTable } from './../src/database/userpoint.table';
-// import { PointHistoryTable } from './../src/database/pointhistory.table';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -82,13 +80,13 @@ describe('AppController (e2e)', () => {
     // test를 위한 충전
     await request(app.getHttpServer())
       .patch('/point/1/charge')
-      .send({ amount : 100 })
+      .send({ amount: 100 })
       .expect(200);
 
     // point 사용
     const res = await request(app.getHttpServer())
       .patch('/point/1/use')
-      .send({ amount : 100})
+      .send({ amount: 100 })
       .expect(200);
 
     // 전부 소진
@@ -103,7 +101,7 @@ describe('AppController (e2e)', () => {
   it('/point/:id/use (PATCH)', async () => {
     const res = await request(app.getHttpServer())
       .patch('/point/1/use')
-      .send({ amount : 100})
+      .send({ amount: 100 })
       .expect(500);
 
     expect(res.body).toEqual({
@@ -117,36 +115,35 @@ describe('AppController (e2e)', () => {
     // test를 위한 충전
     await request(app.getHttpServer())
       .patch('/point/1/charge')
-      .send({ amount : 100 })
+      .send({ amount: 100 })
       .expect(200);
     // test를 위한 사용
     await request(app.getHttpServer())
       .patch('/point/1/use')
-      .send({ amount : 100})
+      .send({ amount: 100 })
       .expect(200);
 
     // 로그 조회
     const res = await request(app.getHttpServer())
       .get('/point/1/histories')
       .expect(200);
-    
+
     // test 응답값
-    expect(res.body).toEqual(
-    [
+    expect(res.body).toEqual([
       {
-        amount: 100, 
-        id: 1, 
-        timeMillis: expect.any(Number), 
-        type: 0, 
-        userId: 1
+        amount: 100,
+        id: 1,
+        timeMillis: expect.any(Number),
+        type: 0,
+        userId: 1,
       },
       {
-        amount: 0, 
-        id: 2, 
-        timeMillis: expect.any(Number), 
-        type: 1, 
-        userId: 1
-      }
+        amount: 0,
+        id: 2,
+        timeMillis: expect.any(Number),
+        type: 1,
+        userId: 1,
+      },
     ]);
   });
 

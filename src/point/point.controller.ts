@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   Patch,
   ValidationPipe,
@@ -13,9 +12,7 @@ import { PointService } from './point.service';
 
 @Controller('/point')
 export class PointController {
-  constructor(
-    private readonly pointService: PointService,
-  ) {}
+  constructor(private readonly pointService: PointService) {}
 
   /**
    * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
@@ -52,9 +49,6 @@ export class PointController {
     @Param('id') id,
     @Body(ValidationPipe) pointDto: PointDto,
   ): Promise<UserPoint> {
-    // const userId = Number.parseInt(id);
-    // const amount = pointDto.amount;
-    // return { id: userId, point: amount, updateMillis: Date.now() };
     return this.pointService.usePoint(id, pointDto);
   }
 }
