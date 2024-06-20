@@ -65,7 +65,7 @@ describe('PointController', () => {
         updateMillis: Date.now(),
       };
 
-      jest.spyOn(pointService, 'getPoint').mockResolvedValue(mockUser);
+      jest.spyOn(pointController, 'point').mockResolvedValue(mockUser);
 
       const result = await pointController.point(userId);
 
@@ -82,6 +82,49 @@ describe('PointController', () => {
       const userId = '0';
 
       await expect(pointController.point(userId)).rejects.toBeInstanceOf(Error);
+    });
+  });
+
+  /**
+   * chargePoint TC
+   * 1. 성공 - 충전 및 로그 생성 검증
+   * 2. 실패 - 충전 금액이 마이너스일 때
+   * 3. 실패 - 충전 금액이 0원일 때
+   */
+  describe('포인트 충전', () => {
+    it('1. 성공 - 충전 및 로그 생성 검증', async () => {
+      const userId = '1';
+      const point = { amount: 1000 };
+
+      const mockUser: UserPoint = {
+        id: 1,
+        point: 1000,
+        updateMillis: Date.now(),
+      };
+
+      jest.spyOn(pointController, 'charge').mockResolvedValue(mockUser);
+
+      const result = await pointController.charge(userId, point);
+
+      expect(result).toEqual(mockUser);
+    });
+
+    it('2. 실패 - 충전 금액이 마이너스일 때', async () => {
+      const userId = '1';
+      const point = { amount: -10000 };
+
+      await expect(
+        pointController.charge(userId, point),
+      ).rejects.toBeInstanceOf(Error);
+    });
+
+    it('3. 실패 - 충전 금액이 0원일 때', async () => {
+      const userId = '1';
+      const point = { amount: 0 };
+
+      await expect(
+        pointController.charge(userId, point),
+      ).rejects.toBeInstanceOf(Error);
     });
   });
 });
