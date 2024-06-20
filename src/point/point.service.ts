@@ -3,6 +3,7 @@ import { UserPointTable } from '../database/userpoint.table';
 import { PointBody } from './point.dto';
 import { PointHistoryTable } from '../database/pointhistory.table';
 import { PointHistory, TransactionType } from './point.model';
+import { error } from 'console';
 
 @Injectable()
 export class PointService {
@@ -54,14 +55,21 @@ export class PointService {
   async usePoint(id: string, pointDto: PointBody) {
     const userId = Number.parseInt(id);
     const amount = pointDto.amount;
-    // 유저가 보요하고 있는 포인트 조회
+
+    // 0 포인트를 사용하는 경우
+    if (amount === 0) throw new Error('0 포인트는 사용할 수 없습니다.');
+    // 마이너스 포인트를 사용하는경우
+    if (amount < 0) throw new Error('마이너스 포인트는 사용할 수 없습니다.');
+
+    // 유저가 보유하고 있는 포인트 조회
     const userPoint = await this.userDb.selectById(userId);
     // 포인트 계산을 위한 변수
     let usedAmount = 0;
+
     // 사용하려는 포인트가 보유 포인트보다 작은 경우
     if (amount > userPoint.point) {
       // 보유 포인트 반환
-      usedAmount = userPoint.point;
+      // usedAmount = userPoint.point;
       throw new Error('보유 포인트가 적습니다.');
     } else {
       // 보유 포인트 차감
@@ -70,6 +78,7 @@ export class PointService {
 
     // 결과 저장
     const result = await this.userDb.insertOrUpdate(userId, usedAmount);
+
     // 로그 저장
     await this.pointHistoryTable.insert(
       result.id,

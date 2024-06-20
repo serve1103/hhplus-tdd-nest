@@ -139,4 +139,138 @@ describe('PointService', () => {
       await expect(chargeUserPoint).rejects.toBeInstanceOf(Error);
     });
   });
+
+  /**
+   * usePoint TC
+   * 1. 성공 - 사용 및 로그 기록
+   * 2. 실패 - 보유 포인트 보다 적은 경우
+   * 3. 실패 - 0 포인트를 사용하는 경우
+   * 4. 실패 - 마이너스 포인트를 사용하는 경우
+   */
+  describe('포인트 사용', () => {
+    // 1. 성공 - 사용 및 로그 기록
+    it('사용 성공', async () => {
+      const userId = '1';
+      const point = { amount: 1000 };
+
+      // 사용 전 포인트 충전을 위한 객체
+      const chargeUserPoint: UserPoint = {
+        id: 1,
+        point: 10000,
+        updateMillis: Date.now(),
+      };
+
+      // 포인트 사용을 위한 객체
+      const usingUserPoint: UserPoint = {
+        id: 1,
+        point: chargeUserPoint.point - point.amount,
+        updateMillis: Date.now(),
+      };
+
+      // 유저 포인트 조회 Mock 설정
+      jest
+        .spyOn(userPointTable, 'selectById')
+        .mockResolvedValue(chargeUserPoint);
+      // 유저 포인트 충전 Mock 설정
+      jest
+        .spyOn(userPointTable, 'insertOrUpdate')
+        .mockResolvedValue(chargeUserPoint);
+      // 유저 포인트 충전 로그 Mock 설정
+      jest.spyOn(pointHistoryTable, 'insert').mockResolvedValue({} as any);
+
+      // 포인트 충전 동작
+      await pointService.chargePoint(userId, point);
+
+      // 유저 포인트 사용 Mock 설정
+      jest
+        .spyOn(userPointTable, 'insertOrUpdate')
+        .mockResolvedValue(usingUserPoint);
+      // 유저 포인트 사용 로그 Mock 설정
+      jest.spyOn(pointHistoryTable, 'insert').mockResolvedValue({} as any);
+
+      // 포인트 사용
+      const useUserPoint = await pointService.usePoint(userId, point);
+
+      // 결과 비교
+      expect(useUserPoint).toEqual(usingUserPoint);
+    });
+
+    // 2. 실패 - 보유 포인트 보다 적은 경우
+    it('실패 - 보유 포인트 보다 적은 경우', async () => {
+      const userId = '1';
+      const point = { amount: 1500 };
+
+      // 포인트 충전을 위한 객체
+      const chargeUserPoint: UserPoint = {
+        id: 1,
+        point: 1000,
+        updateMillis: Date.now(),
+      };
+
+      // 유저 포인트 충전 Mock 설정
+      jest
+        .spyOn(userPointTable, 'insertOrUpdate')
+        .mockResolvedValue(chargeUserPoint);
+      // 유저 포인트 충전 로그 Mock 설정
+      jest.spyOn(pointHistoryTable, 'insert').mockResolvedValue({} as any);
+
+      // 포인트 사용
+      const useUserPoint = pointService.usePoint(userId, point);
+
+      // 오류가 발생할 것을 예상하여 reject를 테스트
+      await expect(useUserPoint).rejects.toBeInstanceOf(Error);
+    });
+
+    // 3. 실패 - 0 포인트를 사용하는 경우
+    it('실패 - 0 포인트를 사용하는 경우', async () => {
+      const userId = '1';
+      const point = { amount: 0 };
+
+      // 포인트 충전을 위한 객체
+      const chargeUserPoint: UserPoint = {
+        id: 1,
+        point: 1000,
+        updateMillis: Date.now(),
+      };
+
+      // 유저 포인트 충전 Mock 설정
+      jest
+        .spyOn(userPointTable, 'insertOrUpdate')
+        .mockResolvedValue(chargeUserPoint);
+      // 유저 포인트 충전 로그 Mock 설정
+      jest.spyOn(pointHistoryTable, 'insert').mockResolvedValue({} as any);
+
+      // 포인트 사용
+      const useUserPoint = pointService.usePoint(userId, point);
+
+      // 오류가 발생할 것을 예상하여 reject를 테스트
+      await expect(useUserPoint).rejects.toBeInstanceOf(Error);
+    });
+
+    // 4. 실패 - 마이너스 포인트를 사용하는 경우
+    it('실패 - 마이너스 포인트를 사용하는 경우', async () => {
+      const userId = '1';
+      const point = { amount: -10000 };
+
+      // 포인트 충전을 위한 객체
+      const chargeUserPoint: UserPoint = {
+        id: 1,
+        point: 1000,
+        updateMillis: Date.now(),
+      };
+
+      // 유저 포인트 충전 Mock 설정
+      jest
+        .spyOn(userPointTable, 'insertOrUpdate')
+        .mockResolvedValue(chargeUserPoint);
+      // 유저 포인트 충전 로그 Mock 설정
+      jest.spyOn(pointHistoryTable, 'insert').mockResolvedValue({} as any);
+
+      // 포인트 사용
+      const useUserPoint = pointService.usePoint(userId, point);
+
+      // 오류가 발생할 것을 예상하여 reject를 테스트
+      await expect(useUserPoint).rejects.toBeInstanceOf(Error);
+    });
+  });
 });
