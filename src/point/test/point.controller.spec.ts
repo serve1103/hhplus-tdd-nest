@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PointController } from '../point.controller';
 import { PointService } from '../point.service';
-import { UserPoint } from '../point.model';
+import { PointHistory, TransactionType, UserPoint } from '../point.model';
 import { UserPointTable } from '../../database/userpoint.table';
 import { PointHistoryTable } from '../../database/pointhistory.table';
 
@@ -152,10 +152,10 @@ describe('PointController', () => {
         updateMillis: Date.now(),
       };
 
-      jest.spyOn(pointService, 'chargePoint').mockResolvedValue(mockChargeUser);
+      jest.spyOn(pointController, 'charge').mockResolvedValue(mockChargeUser);
       await pointController.charge(userId, point);
 
-      jest.spyOn(pointService, 'usePoint').mockResolvedValue(mockUseUser);
+      jest.spyOn(pointController, 'use').mockResolvedValue(mockUseUser);
       const result = await pointController.use(userId, point);
       expect(result).toEqual(mockUseUser);
     });
@@ -183,6 +183,40 @@ describe('PointController', () => {
       const point = { amount: 0 };
 
       await expect(pointController.use(userId, point)).rejects.toBeInstanceOf(
+        Error,
+      );
+    });
+  });
+
+  /**
+   * getHistories TC
+   * 1. 성공 - 로그 조회
+   * 2. 실패 - 유효하지 않은 id 조회
+   */
+  describe('포인트 사용 내역', () => {
+    it('1. 성공 - 로그 조회', async () => {
+      const userId = '1';
+      const mockPointHistoris: PointHistory = {
+        id: 1,
+        userId: 1,
+        type: TransactionType.CHARGE,
+        amount: 1000,
+        timeMillis: Date.now(),
+      };
+
+      jest
+        .spyOn(pointController, 'history')
+        .mockResolvedValue([mockPointHistoris]);
+
+      const result = await pointController.history(userId);
+
+      expect(result).toEqual([mockPointHistoris]);
+    });
+
+    it('2. 실패 - 유효하지 않은 id 조회', async () => {
+      const userId = '';
+
+      await expect(pointController.history(userId)).rejects.toBeInstanceOf(
         Error,
       );
     });
