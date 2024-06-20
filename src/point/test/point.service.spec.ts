@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PointService } from '../point.service';
 import { UserPointTable } from '../../database/userpoint.table';
 import { PointHistoryTable } from '../../database/pointhistory.table';
-import { UserPoint } from '../point.model';
+import { TransactionType, UserPoint } from '../point.model';
 
 describe('PointService', () => {
   let pointService: PointService;
@@ -271,6 +271,44 @@ describe('PointService', () => {
 
       // 오류가 발생할 것을 예상하여 reject를 테스트
       await expect(useUserPoint).rejects.toBeInstanceOf(Error);
+    });
+  });
+
+  /**
+   * getHistories TC
+   * 1. 성공 - 로그 조회
+   * 2. 실패 - 유효하지 않은 id 조회
+   */
+  describe('포인트 사용 내역', () => {
+    // 1. 성공 - 로그 조회
+    it('내역 조회 성공', async () => {
+      const userId = '1';
+
+      // 포인트 사용 내역이 저장될 Mock 데이터
+      const mockHistory = {
+        id: 1,
+        userId: Number.parseInt(userId),
+        amount: 1000,
+        type: TransactionType.CHARGE,
+        timeMillis: Date.now(),
+      };
+
+      jest
+        .spyOn(pointHistoryTable, 'selectAllByUserId')
+        .mockResolvedValue([mockHistory]);
+
+      const getHistoriesList = await pointService.getHistory(userId);
+
+      expect(getHistoriesList).toEqual([mockHistory]);
+    });
+
+    // 2. 실패 - 유효하지 않은 id 조회
+    it('실패 - 유효하지 않은 id 조회', async () => {
+      const userId = '';
+
+      await expect(pointService.getHistory(userId)).rejects.toBeInstanceOf(
+        Error,
+      );
     });
   });
 });

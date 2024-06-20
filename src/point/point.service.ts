@@ -69,7 +69,7 @@ export class PointService {
     // 사용하려는 포인트가 보유 포인트보다 작은 경우
     if (amount > userPoint.point) {
       // 보유 포인트 반환
-      // usedAmount = userPoint.point;
+      usedAmount = userPoint.point;
       throw new Error('보유 포인트가 적습니다.');
     } else {
       // 보유 포인트 차감
