@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserPointTable } from '../database/userpoint.table';
 import { PointBody } from './point.dto';
 import { PointHistoryTable } from '../database/pointhistory.table';
@@ -7,8 +7,8 @@ import { PointHistory, TransactionType } from './point.model';
 @Injectable()
 export class PointService {
   constructor(
-    private readonly userDb: UserPointTable, 
-    private readonly pointHistoryTable: PointHistoryTable
+    private readonly userDb: UserPointTable,
+    private readonly pointHistoryTable: PointHistoryTable,
   ) {}
 
   // 유저의 포인트를 조회한다.
@@ -40,7 +40,12 @@ export class PointService {
     const userPoint = await this.userDb.insertOrUpdate(userId, amount);
 
     // 로그 저장
-    await this.pointHistoryTable.insert(userPoint.id, userPoint.point, TransactionType.CHARGE, Date.now());
+    await this.pointHistoryTable.insert(
+      userPoint.id,
+      userPoint.point,
+      TransactionType.CHARGE,
+      Date.now(),
+    );
 
     return userPoint;
   }
@@ -52,15 +57,13 @@ export class PointService {
     // 유저가 보요하고 있는 포인트 조회
     const userPoint = await this.userDb.selectById(userId);
     // 포인트 계산을 위한 변수
-    let usedAmount = 0
+    let usedAmount = 0;
     // 사용하려는 포인트가 보유 포인트보다 작은 경우
-    if (amount > userPoint.point)
-    {
+    if (amount > userPoint.point) {
       // 보유 포인트 반환
       usedAmount = userPoint.point;
       throw new Error('보유 포인트가 적습니다.');
-    }
-    else {
+    } else {
       // 보유 포인트 차감
       usedAmount = userPoint.point - amount;
     }
@@ -68,7 +71,12 @@ export class PointService {
     // 결과 저장
     const result = await this.userDb.insertOrUpdate(userId, usedAmount);
     // 로그 저장
-    await this.pointHistoryTable.insert(result.id, result.point, TransactionType.USE, Date.now());
+    await this.pointHistoryTable.insert(
+      result.id,
+      result.point,
+      TransactionType.USE,
+      Date.now(),
+    );
     return result;
   }
 
