@@ -40,7 +40,6 @@ describe('PointController', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
     jest.clearAllTimers();
   });
 
@@ -55,7 +54,7 @@ describe('PointController', () => {
    * 3. 실패 - 올바르지 않은 ID가 입력 되었을 때
    */
   describe('포인트 조회', () => {
-    it('1. 조회 성공', async () => {
+    it('1. 성공 - 조회 성공', async () => {
       const userId = '1';
 
       //유저 mock 데이터 설정
@@ -125,6 +124,67 @@ describe('PointController', () => {
       await expect(
         pointController.charge(userId, point),
       ).rejects.toBeInstanceOf(Error);
+    });
+  });
+
+  /**
+   * usePoint TC
+   * 1. 성공 - 사용 및 로그 기록
+   * 2. 실패 - 보유 포인트 보다 적은 경우
+   * 3. 실패 - 0 포인트를 사용하는 경우
+   * 4. 실패 - 마이너스 포인트를 사용하는 경우
+   */
+  describe('포인트 사용', () => {
+    it('1. 성공 - 사용 및 로그 기록', async () => {
+      const userId = '1';
+      const point = { amount: 1000 };
+
+      // 사용하기 위한 충전
+      const mockChargeUser: UserPoint = {
+        id: 1,
+        point: 1000,
+        updateMillis: Date.now(),
+      };
+
+      const mockUseUser: UserPoint = {
+        id: 1,
+        point: 0,
+        updateMillis: Date.now(),
+      };
+
+      jest.spyOn(pointService, 'chargePoint').mockResolvedValue(mockChargeUser);
+      await pointController.charge(userId, point);
+
+      jest.spyOn(pointService, 'usePoint').mockResolvedValue(mockUseUser);
+      const result = await pointController.use(userId, point);
+      expect(result).toEqual(mockUseUser);
+    });
+
+    it('2. 실패 - 보유 포인트 보다 적은 경우', async () => {
+      const userId = '1';
+      const point = { amount: 10000 };
+
+      await expect(pointController.use(userId, point)).rejects.toBeInstanceOf(
+        Error,
+      );
+    });
+
+    it('3. 실패 - 0 포인트를 사용하는 경우', async () => {
+      const userId = '1';
+      const point = { amount: 0 };
+
+      await expect(pointController.use(userId, point)).rejects.toBeInstanceOf(
+        Error,
+      );
+    });
+
+    it('4. 실패 - 마이너스 포인트를 사용하는 경우', async () => {
+      const userId = '1';
+      const point = { amount: 0 };
+
+      await expect(pointController.use(userId, point)).rejects.toBeInstanceOf(
+        Error,
+      );
     });
   });
 });
