@@ -49,9 +49,9 @@ describe('PointController', () => {
 
   /**
    * getPoint TC
-   * 1. 성공
-   * 2. 실패 - id가 입력되지 않았을 때
-   * 3. 실패 - 올바르지 않은 ID가 입력 되었을 때
+   * 1. 성공 
+   * 2. 실패 - id가 입력되지 않았을 때 
+   * 3. 실패 - 올바르지 않은 ID가 입력 되었을 때 
    */
   describe('포인트 조회', () => {
     it('1. 성공 - 조회 성공', async () => {
@@ -63,17 +63,19 @@ describe('PointController', () => {
         point: 0,
         updateMillis: Date.now(),
       };
-
+      //임의 함수 동작 확인
       jest.spyOn(pointController, 'point').mockResolvedValue(mockUser);
 
       const result = await pointController.point(userId);
-
+      
+      // 반환값과 mock데이터 확인
       expect(result).toEqual(mockUser);
     });
 
     it('2. 실패 - id가 입력되지 않았을 때', async () => {
       const userId = '';
 
+      // Error test
       await expect(pointController.point(userId)).rejects.toBeInstanceOf(Error);
     });
 
@@ -86,9 +88,9 @@ describe('PointController', () => {
 
   /**
    * chargePoint TC
-   * 1. 성공 - 충전 및 로그 생성 검증
-   * 2. 실패 - 충전 금액이 마이너스일 때
-   * 3. 실패 - 충전 금액이 0원일 때
+   * 1. 성공 - 충전 및 로그 생성 검증 
+   * 2. 실패 - 충전 금액이 마이너스일 때 
+   * 3. 실패 - 충전 금액이 0원일 때 
    */
   describe('포인트 충전', () => {
     it('1. 성공 - 충전 및 로그 생성 검증', async () => {
@@ -189,9 +191,9 @@ describe('PointController', () => {
   });
 
   /**
-   * getHistories TC
-   * 1. 성공 - 로그 조회
-   * 2. 실패 - 유효하지 않은 id 조회
+   * getHistories TC 
+   * 1. 성공 - 로그 조회  
+   * 2. 실패 - 유효하지 않은 id 조회 
    */
   describe('포인트 사용 내역', () => {
     it('1. 성공 - 로그 조회', async () => {
