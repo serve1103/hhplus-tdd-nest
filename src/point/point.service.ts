@@ -3,10 +3,13 @@ import { UserPointTable } from '../database/userpoint.table';
 import { PointBody } from './point.dto';
 import { PointHistoryTable } from '../database/pointhistory.table';
 import { PointHistory, TransactionType } from './point.model';
-import { error } from 'console';
+import { Mutex } from 'async-mutex';
 
 @Injectable()
 export class PointService {
+  // 동시성 제어를 위한 Mutex 생성자 생성
+  private readonly mutex = new Mutex();
+
   constructor(
     private readonly userDb: UserPointTable,
     private readonly pointHistoryTable: PointHistoryTable,
@@ -30,63 +33,68 @@ export class PointService {
 
   // 포인트 충전
   async chargePoint(id: string, pointDto: PointBody) {
-    const userId = Number.parseInt(id);
-    const amount = pointDto.amount;
+    // 동시성 제어를 위한 mutex
+    return this.mutex.runExclusive(async () => {
+      const userId = Number.parseInt(id);
+      const amount = pointDto.amount;
 
-    // 음수와 0원은 충전이 되지 않도록 에러반환
-    if (amount < 0) throw new Error('포인트는 음수일 수 없습니다.');
-    if (amount == 0) throw new Error('0 포인트는 충전할 수 없습니다.');
+      // 음수와 0원은 충전이 되지 않도록 에러반환
+      if (amount < 0) throw new Error('포인트는 음수일 수 없습니다.');
+      if (amount == 0) throw new Error('0 포인트는 충전할 수 없습니다.');
 
-    // 정상적인 포인트만 충전
-    const userPoint = await this.userDb.insertOrUpdate(userId, amount);
+      // 정상적인 포인트만 충전
+      const userPoint = await this.userDb.selectById(userId);
 
-    // 로그 저장
-    await this.pointHistoryTable.insert(
-      userPoint.id,
-      userPoint.point,
-      TransactionType.CHARGE,
-      Date.now(),
-    );
+      userPoint.point += amount;
+      const result = await this.userDb.insertOrUpdate(userId, userPoint.point);
 
-    return userPoint;
+      // 로그 저장
+      await this.pointHistoryTable.insert(
+        userId,
+        amount,
+        TransactionType.CHARGE,
+        Date.now(),
+      );
+
+      return result;
+    });
   }
 
   // 포인트 사용
   async usePoint(id: string, pointDto: PointBody) {
-    const userId = Number.parseInt(id);
-    const amount = pointDto.amount;
+    // 동시성 제어를 위한 mutex
+    return this.mutex.runExclusive(async () => {
+      const userId = Number.parseInt(id);
+      const amount = pointDto.amount;
 
-    // 0 포인트를 사용하는 경우
-    if (amount === 0) throw new Error('0 포인트는 사용할 수 없습니다.');
-    // 마이너스 포인트를 사용하는경우
-    if (amount < 0) throw new Error('마이너스 포인트는 사용할 수 없습니다.');
+      // 0 포인트를 사용하는 경우
+      if (amount === 0) throw new Error('0 포인트는 사용할 수 없습니다.');
+      // 마이너스 포인트를 사용하는경우
+      if (amount < 0) throw new Error('마이너스 포인트는 사용할 수 없습니다.');
 
-    // 유저가 보유하고 있는 포인트 조회
-    const userPoint = await this.userDb.selectById(userId);
-    // 포인트 계산을 위한 변수
-    let usedAmount = 0;
+      // 유저가 보유하고 있는 포인트 조회
+      const userPoint = await this.userDb.selectById(userId);
 
-    // 사용하려는 포인트가 보유 포인트보다 작은 경우
-    if (amount > userPoint.point) {
-      // 보유 포인트 반환
-      usedAmount = userPoint.point;
-      throw new Error('보유 포인트가 적습니다.');
-    } else {
+      // 사용하려는 포인트가 보유 포인트보다 작은 경우
+      if (userPoint.point < amount)
+        throw new Error('보유 포인트가 부족합니다.');
+
       // 보유 포인트 차감
-      usedAmount = userPoint.point - amount;
-    }
+      userPoint.point -= amount;
 
-    // 결과 저장
-    const result = await this.userDb.insertOrUpdate(userId, usedAmount);
+      // 결과 저장
+      const result = await this.userDb.insertOrUpdate(userId, userPoint.point);
 
-    // 로그 저장
-    await this.pointHistoryTable.insert(
-      result.id,
-      result.point,
-      TransactionType.USE,
-      Date.now(),
-    );
-    return result;
+      // 로그 저장
+      await this.pointHistoryTable.insert(
+        userId,
+        amount,
+        TransactionType.USE,
+        Date.now(),
+      );
+
+      return result;
+    });
   }
 
   // 로그 조회

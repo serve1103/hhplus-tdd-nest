@@ -138,13 +138,53 @@ describe('AppController (e2e)', () => {
         userId: 1,
       },
       {
-        amount: 0,
+        amount: 100,
         id: 2,
         timeMillis: expect.any(Number),
         type: 1,
         userId: 1,
       },
     ]);
+  });
+
+  describe('동시성 테스트', () => {
+    it('동시에 5번의 동작', async () => {
+      await request(app.getHttpServer())
+        .patch('/point/1/charge')
+        .send({ amount: 100000 })
+        .expect(200);
+
+      await Promise.all([
+        request(app.getHttpServer())
+          .patch('/point/1/charge')
+          .send({ amount: 1000 })
+          .expect(200),
+        request(app.getHttpServer())
+          .patch('/point/1/charge')
+          .send({ amount: 150 })
+          .expect(200),
+        request(app.getHttpServer())
+          .patch('/point/1/use')
+          .send({ amount: 10000 })
+          .expect(200),
+        request(app.getHttpServer())
+          .patch('/point/1/charge')
+          .send({ amount: 5000 })
+          .expect(200),
+        request(app.getHttpServer())
+          .patch('/point/1/use')
+          .send({ amount: 20000 })
+          .expect(200),
+      ]);
+
+      const res = await request(app.getHttpServer())
+        .get('/point/1')
+        .expect(200);
+
+      expect(res.body.point).toEqual(
+        100000 + 1000 + 150 + 5000 - 10000 - 20000,
+      );
+    });
   });
 
   // 끝점
